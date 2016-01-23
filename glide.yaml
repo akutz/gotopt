@@ -1,0 +1,5 @@
+package: github.com/akutz/gomk
+import:
+  - package: github.com/stretchr/testify
+    ref:     master
+    vcs:     git
