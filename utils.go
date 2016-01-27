@@ -78,3 +78,19 @@ func logf(f string, s ...interface{}) {
 	}
 	log.Printf(f, s...)
 }
+
+func parseLongOptSize(s string, nextChar int) (nameEnd, nameLen int) {
+	nameLen = len(s)
+	if nextChar > nameLen-1 {
+		return -1, nameLen
+	}
+
+	s = s[nextChar:]
+	nameLen = len(s)
+
+	if nameEnd = strings.IndexByte(s, '='); nameEnd > -1 {
+		nameLen = nameEnd
+	}
+
+	return
+}
