@@ -156,7 +156,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 		return argv[d.optInd][0] != '-' || len(argv[d.optInd]) == 1
 	}
 
-	if d.nextChar == nil {
+	if d.nextChar == nil || *d.nextChar > len(argv[d.optInd]) {
 
 		logf("d.optInd=%d\n", d.optInd)
 		logln("d.nextChar == nil")
@@ -249,6 +249,235 @@ func getOptInternalR(argc int, argv []string, optString string,
 		// punctuation.
 		nc := 1 + toIntFromBool(len(longOpts) > 0 && argv[d.optInd][1] == '-')
 		d.nextChar = &nc
+	}
+
+	// decode the current option-argv-element.
+	//
+	// check whether the argv-element is a long option.
+	//
+	// if longOnly and the argv-element has the form "-f", where f is
+	// a valid short option, don't consider it an abbreviated form of
+	// a long option that starts with f. Otherwise there would be no
+	// way to give the -f short option.
+	//
+	// On the other hand, if there's a long option "fubar" and
+	// the argv-element is "-fu", do consider that an abbreviation of
+	// the long option, just like "--fu", and not "-f" with arg "u".
+	//
+	// this distinction seems to be the most useful approach.
+	var hasLongOpts bool
+
+	if len(longOpts) > 0 {
+		char1IsDash := false
+		lenOptIndArgGt2 := false
+		optIndArg2ndCharIsOpt := false
+
+		if d.optInd < argc {
+			optIndArg := argv[d.optInd]
+			lenOptIndArg := len(optIndArg)
+			if lenOptIndArg > 0 {
+				optIndArg2ndCharIsOpt = strings.IndexByte(
+					optString, optIndArg[1]) == -1
+				if lenOptIndArg > 1 {
+					char1IsDash = optIndArg[1] == '-'
+					lenOptIndArgGt2 = lenOptIndArg > 2
+				}
+			}
+		}
+
+		hasLongOpts = char1IsDash || (longOnly &&
+			(lenOptIndArgGt2 || optIndArg2ndCharIsOpt))
+	}
+
+	if hasLongOpts {
+		var (
+			nameEnd     int
+			nameLen     int
+			p           *LongOption
+			pFound      *LongOption
+			amBigList   *longOptList
+			exact       bool
+			indFound    = -1
+			optionIndex int
+		)
+
+		logln("hasLongOpts")
+
+		logf("argv[d.optInd]=%s\n", argv[d.optInd])
+
+		nameEnd, nameLen = parseLongOptSize(argv[d.optInd], *d.nextChar)
+
+		logf("nameEnd=%d, nameLen=%d\n", nameEnd, nameLen)
+		logf("argv[d.optInd][*d.nextChar:]=%s\n", argv[d.optInd][*d.nextChar:])
+
+		// test all long options for either exact match or abbreviated matches
+		for optionIndex, p = range longOpts {
+
+			logf("p.Name=%s\n", p.Name)
+			if strncmpb(p.Name, argv[d.optInd][*d.nextChar:], nameLen) {
+
+				logf("exact match found: p.Name=%s", p.Name)
+				logf(
+					"argv[d.optInd][*d.nextChar:]=%s\n",
+					argv[d.optInd][*d.nextChar:])
+
+				// exact match found
+				if nameLen == len(p.Name) {
+					pFound = p
+					indFound = optionIndex
+					exact = true
+					break
+
+				} else if pFound == nil {
+
+					// first non-exact match found
+					pFound = p
+					indFound = optionIndex
+
+				} else if longOnly ||
+					pFound.Type != p.Type ||
+					pFound.Flag != p.Flag ||
+					pFound.Val != p.Val {
+
+					// second or later nonexact match found
+					newP := &longOptList{
+						p:    p,
+						next: amBigList,
+					}
+					amBigList = newP
+				}
+			}
+		}
+
+		if amBigList != nil && !exact {
+
+			logln("amBigList != nil && !exact")
+
+			if printErrors {
+				first := &longOptList{
+					p:    pFound,
+					next: amBigList,
+				}
+				amBigList = first
+
+				fmt.Fprintf(
+					os.Stderr,
+					"%s: option '%s' is ambiguous; possibilities:",
+					argv[0],
+					argv[d.optInd])
+
+				for {
+					fmt.Fprintf(os.Stderr, " '--%s'", amBigList.p.Name)
+					amBigList = amBigList.next
+					if amBigList == nil {
+						break
+					}
+				}
+				fmt.Fprintln(os.Stderr)
+			}
+
+			//*d.nextChar += len(argv[d.optInd][*d.nextChar:])
+			d.nextChar = nil
+			d.optInd++
+			d.optOpt = 0
+			return '?'
+		}
+
+		if pFound != nil {
+
+			logln("pFound != nil")
+
+			optionIndex = indFound
+			d.optInd++
+
+			if nameEnd > -1 {
+				if pFound.Type != NoArgument {
+					d.optArg = argv[d.optInd-1][*d.nextChar:][nameEnd+1:]
+				} else {
+
+					if printErrors {
+						if argv[d.optInd-1][1] == '-' {
+							fmt.Fprintf(
+								os.Stderr,
+								"%s: option '--%s' doesn't allow an argument\n",
+								argv[0], pFound.Name)
+						} else {
+							fmt.Fprintf(
+								os.Stderr,
+								"%s: option '%c%s' doesn't allow an argument\n",
+								argv[0], argv[d.optInd-1][0], pFound.Name)
+						}
+					}
+
+					//*d.nextChar += len(argv[d.optInd][*d.nextChar:])
+					d.nextChar = nil
+					d.optOpt = pFound.Val
+					return '?'
+				}
+			} else if pFound.Type == RequiredArgument {
+				if d.optInd < argc {
+					d.optArg = argv[d.optInd]
+					d.optInd++
+				} else {
+					if printErrors {
+						fmt.Fprintf(os.Stderr,
+							"%s: option '--%s' requires an argument\n",
+							argv[0], pFound.Name)
+					}
+					//*d.nextChar += len(argv[d.optInd][*d.nextChar:])
+					d.nextChar = nil
+					d.optOpt = pFound.Val
+					if optString[0] == ':' {
+						return ':'
+					}
+					return '?'
+				}
+			}
+
+			d.nextChar = nil
+			//*d.nextChar += len(argv[d.optInd][*d.nextChar:])
+			if longInd != nil {
+				*longInd = optionIndex
+			}
+			if pFound.Flag != nil {
+				*pFound.Flag = pFound.Val
+				return 0
+			}
+			return pFound.Val
+		}
+
+		// can't find it as a long option.  If this is not getopt_long_only,
+		// or the option starts with '--' or is not a valid short
+		// option, then it's an error.
+		//
+		// otherwise interpret it as a short option.
+		if !longOnly ||
+			argv[d.optInd][1] == '-' ||
+			strings.IndexByte(optString, argv[d.optInd][*d.nextChar]) == -1 {
+
+			if printErrors {
+				if argv[d.optInd][1] == '-' {
+					// --option
+					fmt.Fprintf(
+						os.Stderr,
+						"%s: unrecognized option '--%s'\n",
+						argv[0], argv[d.optInd][*d.nextChar:])
+				} else {
+					fmt.Fprintf(
+						os.Stderr,
+						"%s: unrecognized option '%c%c'\n",
+						argv[0],
+						argv[d.optInd][0],
+						argv[d.optInd][*d.nextChar])
+				}
+			}
+
+			d.optArg = argv[d.optInd][*d.nextChar:]
+			d.nextChar = nil
+			d.optInd++
+			d.optOpt = 0
+			return '?'
+		}
 	}
 
 	var c byte
@@ -440,4 +669,15 @@ func exchange(argv []string, d *getOptData) {
 	// update records for the slots the non-options now occupy.
 	d.firstNonOpt += (d.optInd - d.lastNonOpt)
 	d.lastNonOpt = d.optInd
+}
+
+// ppNextChar increments the nextChar field if it's valid to do so
+func (d *getOptData) ppNextChar(argc int, argv []string) {
+	if d.optInd >= argc {
+		return
+	}
+	arg := argv[d.optInd]
+	if *d.nextChar < len(arg) {
+		*d.nextChar += len(arg[*d.nextChar:])
+	}
 }

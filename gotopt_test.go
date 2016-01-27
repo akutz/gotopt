@@ -7,17 +7,27 @@ import (
 )
 
 func TestGetOptOk(t *testing.T) {
-	assertOk(t, testGetOptGlobal(t, "tgok1", "-t", "37", "-n", "effie"))
-	assertOk(t, testGetOptGlobal(t, "tgok2", "-nt", "37", "effie"))
-	assertOk(t, testGetOptGlobal(t, "tgok3", "-t", "37", "effie", "-n"))
-	assertOk(t, testGetOptGlobal(t, "tgok4", "effie", "-nt", "37"))
-	assertOk(t, testGetOptGlobal(t, "tgok5", "effie", "-n", "-t", "37"))
+	assertOk(t, testGetOptGlobal(t, "tgok01", "-t", "37", "-n", "effie"))
+	assertOk(t, testGetOptGlobal(t, "tgok02", "-nt", "37", "effie"))
+	assertOk(t, testGetOptGlobal(t, "tgok03", "-t", "37", "effie", "-n"))
+	assertOk(t, testGetOptGlobal(t, "tgok04", "effie", "-nt", "37"))
+	assertOk(t, testGetOptGlobal(t, "tgok05", "effie", "-n", "-t", "37"))
 
-	assertOk(t, testGetOptInstance(t, "tiok1", "-t", "37", "-n", "effie"))
-	assertOk(t, testGetOptInstance(t, "tiok2", "-nt", "37", "effie"))
-	assertOk(t, testGetOptInstance(t, "tiok3", "-t", "37", "effie", "-n"))
-	assertOk(t, testGetOptInstance(t, "tiok4", "effie", "-nt", "37"))
-	assertOk(t, testGetOptInstance(t, "tiok5", "effie", "-n", "-t", "37"))
+	assertOk(t, testGetOptGlobal(t, "tgok06", "-t37", "-n", "effie"))
+	assertOk(t, testGetOptGlobal(t, "tgok07", "-nt37", "effie"))
+	assertOk(t, testGetOptGlobal(t, "tgok08", "-t37", "effie", "-n"))
+	assertOk(t, testGetOptGlobal(t, "tgok09", "effie", "-nt37"))
+
+	assertOk(t, testGetOptInstance(t, "tiok01", "-t", "37", "-n", "effie"))
+	assertOk(t, testGetOptInstance(t, "tiok02", "-nt", "37", "effie"))
+	assertOk(t, testGetOptInstance(t, "tiok03", "-t", "37", "effie", "-n"))
+	assertOk(t, testGetOptInstance(t, "tiok04", "effie", "-nt", "37"))
+	assertOk(t, testGetOptInstance(t, "tiok05", "effie", "-n", "-t", "37"))
+
+	assertOk(t, testGetOptGlobal(t, "tiok06", "-t37", "-n", "effie"))
+	assertOk(t, testGetOptGlobal(t, "tiok07", "-nt37", "effie"))
+	assertOk(t, testGetOptGlobal(t, "tiok08", "-t37", "effie", "-n"))
+	assertOk(t, testGetOptGlobal(t, "tiok09", "effie", "-nt37"))
 }
 
 func TestGetOptMissingName(t *testing.T) {
@@ -80,7 +90,7 @@ func TestGetOptNoTime(t *testing.T) {
 	}
 }
 
-func TestGetOptUknownOpt(t *testing.T) {
+func TestGetOptUnknownOpt(t *testing.T) {
 	{
 		r := testGetOptGlobal(t, "tgunkn1", "-t", "37", "-f", "-n", "effie")
 		assert.True(t, r.tfnd)
