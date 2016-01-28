@@ -670,14 +670,3 @@ func exchange(argv []string, d *getOptData) {
 	d.firstNonOpt += (d.optInd - d.lastNonOpt)
 	d.lastNonOpt = d.optInd
 }
-
-// ppNextChar increments the nextChar field if it's valid to do so
-func (d *getOptData) ppNextChar(argc int, argv []string) {
-	if d.optInd >= argc {
-		return
-	}
-	arg := argv[d.optInd]
-	if *d.nextChar < len(arg) {
-		*d.nextChar += len(arg[*d.nextChar:])
-	}
-}

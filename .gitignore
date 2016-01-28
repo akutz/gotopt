@@ -6,6 +6,7 @@ vendor/
 .project
 glide.lock
 .gomk/tmp
+cover.out
 
 # Created by https://www.gitignore.io
 

@@ -6,3 +6,4 @@ install:
 script:
   - make install
   - make test
+  - make cover
