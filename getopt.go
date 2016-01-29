@@ -331,13 +331,14 @@ func getOptInternalR(argc int, argv []string, optString string,
 			Debugf("p.Name=%s", p.Name)
 			if strncmpb(p.Name, argv[d.optInd][*d.nextChar:], nameLen) {
 
-				Debugf("exact match found: p.Name=%s", p.Name)
 				Debugf(
 					"argv[d.optInd][*d.nextChar:]=%s",
 					argv[d.optInd][*d.nextChar:])
 
 				// exact match found
 				if nameLen == len(p.Name) {
+					Debugf("exact match found: p.Name=%s", p.Name)
+
 					pFound = p
 					indFound = optionIndex
 					exact = true
@@ -528,11 +529,183 @@ func getOptInternalR(argc int, argv []string, optString string,
 
 	// convenience. Treat POSIX -W foo same as long option --foo
 	if lenTemp > 1 && temp[0] == 'W' && temp[1] == ';' {
+		Debugln("found -W")
 		if longOpts == nil {
+			Debugln("nolongs")
 			d.nextChar = nil
 			// let the application handle it
 			return 'W'
 		}
+
+		var (
+			nameEnd     int
+			nameLen     int
+			p           *LongOption
+			pFound      *LongOption
+			ambig       bool
+			exact       bool
+			indFound    = -1
+			optionIndex int
+		)
+
+		// this is an option that requires an argument.
+		if d.nextChar != nil && *d.nextChar < len(argv[d.optInd]) {
+
+			Debugf("option '-W %s' requires arg", c)
+
+			d.optArg = argv[d.optInd][*d.nextChar:]
+			// if we end this ARGV-element by taking the rest as an arg,
+			// we must advance to the next element now
+			d.optInd++
+
+		} else if d.optInd == argc {
+
+			if printErrors {
+				fmt.Fprintf(
+					os.Stderr,
+					"%s: option requires an argument -- '%c'\n",
+					argv[0], c)
+			}
+
+			d.optOpt = int(c)
+			if optString[0] == ':' {
+				c = ':'
+			} else {
+				c = '?'
+			}
+			return int(c)
+		} else {
+
+			// We already incremented 'd.optInd' once;
+			// increment it again when taking next ARGV-elt as argument.
+			d.optArg = argv[d.optInd]
+			d.optInd++
+
+			Debugf("optArg=%s, optInd=%d", d.optArg, d.optInd)
+		}
+
+		// optarg is now the argument, see if it's in the table of longopts.
+		nc := 0
+		d.nextChar = &nc
+		nameEnd, nameLen = parseLongOptSize(d.optArg, *d.nextChar)
+
+		Debugf("nameEnd=%d, nameLen=%d", nameEnd, nameLen)
+
+		// test all long options for either exact match or abbreviated matches
+		for optionIndex, p = range longOpts {
+
+			Debugf("-W p.Name=%s", p.Name)
+			if strncmpb(p.Name, d.optArg[*d.nextChar:], nameLen) {
+
+				Debugf("-W d.optArg=%s", d.optArg)
+
+				// exact match found
+				if nameLen == len(p.Name) {
+					Debugf("-W exact match found: p.Name=%s", p.Name)
+
+					pFound = p
+					indFound = optionIndex
+					exact = true
+					break
+
+				} else if pFound == nil {
+
+					Debugf("-W first non-exact match found")
+
+					// first non-exact match found
+					pFound = p
+					indFound = optionIndex
+
+				} else if longOnly ||
+					pFound.Type != p.Type ||
+					pFound.Flag != p.Flag ||
+					pFound.Val != p.Val {
+
+					Debugf("-W ambig = true")
+					ambig = true
+				}
+			}
+		}
+
+		if ambig && !exact {
+
+			Debugln("amBigList != nil && !exact")
+
+			if printErrors {
+				fmt.Fprintf(
+					os.Stderr,
+					"%s: option '-W %s' is ambiguous",
+					argv[0],
+					argv[d.optInd])
+			}
+
+			//*d.nextChar += len(argv[d.optInd][*d.nextChar:])
+			d.nextChar = nil
+			d.optInd++
+			d.optOpt = 0
+			return '?'
+		}
+
+		if pFound != nil {
+
+			Debugln("pFound != nil")
+
+			optionIndex = indFound
+
+			if nameEnd > -1 {
+				if pFound.Type != NoArgument {
+					d.optArg = d.optArg[*d.nextChar:][nameEnd+1:]
+				} else {
+
+					if printErrors {
+						fmt.Fprintf(
+							os.Stderr,
+							"%s: option '-W %s' doesn't allow an argument\n",
+							argv[0], pFound.Name)
+					}
+
+					//*d.nextChar += len(argv[d.optInd][*d.nextChar:])
+					d.nextChar = nil
+					d.optOpt = pFound.Val
+					return '?'
+				}
+			} else if pFound.Type == RequiredArgument {
+				if d.optInd < argc {
+					d.optArg = argv[d.optInd]
+					d.optInd++
+				} else {
+					if printErrors {
+						fmt.Fprintf(os.Stderr,
+							"%s: option '-W %s' requires an argument\n",
+							argv[0], pFound.Name)
+					}
+					//*d.nextChar += len(argv[d.optInd][*d.nextChar:])
+					d.nextChar = nil
+					d.optOpt = pFound.Val
+					if optString[0] == ':' {
+						return ':'
+					}
+					return '?'
+				}
+			} else {
+				d.optArg = ""
+			}
+
+			d.nextChar = nil
+			//*d.nextChar += len(argv[d.optInd][*d.nextChar:])
+			if longInd != nil {
+				*longInd = optionIndex
+			}
+			if pFound.Flag != nil {
+				*pFound.Flag = pFound.Val
+				return 0
+			}
+			return pFound.Val
+		}
+
+		Debugf("option '-W %s' not found", d.optArg)
+		d.nextChar = nil
+		return 'W'
 	}
 
 	if lenTemp > 0 && temp[1] == ':' {

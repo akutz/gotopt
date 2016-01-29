@@ -6,18 +6,22 @@ import (
 
 // ErrRequiredArg is the error for when a required argument is missing.
 type ErrRequiredArg struct {
-	Opt int
+	OptOpt int
 }
 
 func (e *ErrRequiredArg) Error() string {
-	return fmt.Sprintf("arg required for opt %c", e.Opt)
+	return fmt.Sprintf("arg required for opt '%c'", e.OptOpt)
 }
 
 // ErrUnknownOpt is the error for when an unknown option is encountered.
 type ErrUnknownOpt struct {
-	Opt int
+	OptOpt int
+	OptArg string
 }
 
 func (e *ErrUnknownOpt) Error() string {
-	return fmt.Sprintf("unknown option %c", e.Opt)
+	if OptArg == "" {
+		return fmt.Sprintf("unknown option '%c'", e.OptOpt)
+	}
+	return fmt.Sprintf("unknown option '%s'", e.OptArg)
 }
