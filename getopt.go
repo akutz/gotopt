@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// OrderTypes are RequireOrder, Permute, and ReturnInOrder
-type OrderTypes int
+// orderTypes are RequireOrder, Permute, and ReturnInOrder
+type orderTypes int
 
 const (
 	// RequireOrder means don't recognize them as options;
@@ -20,7 +20,7 @@ const (
 	// This mode of operation is selected by either setting the environment
 	// variable POSIXLY_CORRECT, or using `+' as the first character
 	// of the list of option characters.
-	RequireOrder OrderTypes = iota
+	RequireOrder orderTypes = iota
 
 	// Permute is the default. We permute the contents of argv as we scan,
 	// so that eventually all the non-options are at the end. This allows
@@ -45,7 +45,7 @@ type getOptData struct {
 
 	initialized    bool
 	nextChar       *int
-	ordering       OrderTypes
+	ordering       orderTypes
 	posixlyCorrect bool
 	firstNonOpt    int
 	lastNonOpt     int
