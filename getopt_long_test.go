@@ -1,6 +1,7 @@
 package gotopt
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,9 +37,54 @@ func TestGetOptLongOk(t *testing.T) {
 	assertLongOk(t, testGetOptLongInstance(t, "tiok07", "--time", "37", "effie", "-n"))
 	assertLongOk(t, testGetOptLongInstance(t, "tiok08", "effie", "-n", "--time", "37"))
 
-	assertLongOk(t, testGetOptLongInstance(t, "tgok09", "--ti", "37", "-n", "effie"))
-	assertLongOk(t, testGetOptLongInstance(t, "tgok10", "-n", "--tim", "37", "effie"))
-	assertLongOk(t, testGetOptLongInstance(t, "tgok11", "--t", "37", "effie", "-n"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiok09", "--ti", "37", "-n", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiok10", "-n", "--tim", "37", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiok11", "--t", "37", "effie", "-n"))
+
+	assertLongOk(t, testGetOptLongInstance(t, "tiok12", "--time", "37", "-n", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiok13", "--na", "--time", "37", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiok14", "--time", "37", "effie", "--nam"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiok15", "effie", "--name", "--time", "37"))
+}
+
+func TestGetOptLongW(t *testing.T) {
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw01", "-W", "time=37", "-n", "effie"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw02", "-n", "-W", "time=37", "effie"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw03", "-W", "time=37", "effie", "-n"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw04", "effie", "-n", "-W", "time=37"))
+
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw05", "-W", "time", "37", "-n", "effie"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw06", "-n", "-W", "time", "37", "effie"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw07", "-W", "time", "37", "effie", "-n"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw08", "effie", "-n", "-W", "time", "37"))
+
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw09", "-W", "ti", "37", "-n", "effie"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw10", "-n", "-W", "tim", "37", "effie"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw11", "-W", "t", "37", "effie", "-n"))
+
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw12", "-W", "time", "37", "-W", "n", "effie"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw13", "-W", "na", "-W", "time", "37", "effie"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw14", "-W", "time", "37", "effie", "-W", "nam"))
+	assertLongOk(t, testGetOptLongGlobal(t, "tgokw15", "effie", "-W", "name", "-W", "time", "37"))
+
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw01", "-W", "time=37", "-n", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw02", "-n", "-W", "time=37", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw03", "-W", "time=37", "effie", "-n"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw04", "effie", "-n", "-W", "time=37"))
+
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw05", "-W", "time", "37", "-n", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw06", "-n", "-W", "time", "37", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw07", "-W", "time", "37", "effie", "-n"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw08", "effie", "-n", "-W", "time", "37"))
+
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw09", "-W", "ti", "37", "-n", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw10", "-n", "-W", "tim", "37", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw11", "-W", "t", "37", "effie", "-n"))
+
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw12", "-W", "time", "37", "-W", "n", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw13", "-W", "na", "-W", "time", "37", "effie"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw14", "-W", "time", "37", "effie", "-W", "nam"))
+	assertLongOk(t, testGetOptLongInstance(t, "tiokw15", "effie", "-W", "name", "-W", "time", "37"))
 }
 
 func TestGetOptLongMissingName(t *testing.T) {
@@ -71,12 +117,42 @@ func TestGetOptLongMissingName(t *testing.T) {
 	assertLongNoName(t, testGetOptLongInstance(t, "tgok11", "--t", "37", "-n"))
 }
 
+func TestGetOptLongMissingNameW(t *testing.T) {
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnnw01", "-W", "time=37", "-n"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnnw02", "-n", "-W", "time=37"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnnw03", "-W", "time=37", "-W", "n"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnnw04", "-W", "na", "-W", "time=37"))
+
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnnw05", "-W", "time", "37", "-n"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnnw06", "-n", "-W", "time", "37"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnnw07", "-W", "time", "37", "-W", "n"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnnw08", "-W", "na", "-W", "time", "37"))
+
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgokw09", "-W", "ti", "37", "-n"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgokw10", "-W", "nam", "-W", "tim", "37"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgokw11", "-W", "t", "37", "-W", "name"))
+
+	assertLongNoName(t, testGetOptLongInstance(t, "tinnw01", "-W", "time=37", "-n"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tinnw02", "-n", "-W", "time=37"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tinnw03", "-W", "time=37", "-W", "n"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tinnw04", "-W", "na", "-W", "time=37"))
+
+	assertLongNoName(t, testGetOptLongInstance(t, "tinnw05", "-W", "time", "37", "-n"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tinnw06", "-n", "-W", "time", "37"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tinnw07", "-W", "time", "37", "-W", "n"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tinnw08", "-W", "na", "-W", "time", "37"))
+
+	assertLongNoName(t, testGetOptLongInstance(t, "tiokw09", "-W", "ti", "37", "-n"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tiokw10", "-W", "nam", "-W", "tim", "37"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tiokw11", "-W", "t", "37", "-W", "name"))
+}
+
 func TestGetOptLongNoTime(t *testing.T) {
 	a1 := func(t *testing.T, r *getOptLongTestResult) {
 		assert.False(t, r.tfnd)
 		assert.IsType(t, &ErrRequiredArg{}, r.err)
 		err := r.err.(*ErrRequiredArg)
-		assert.EqualValues(t, 't', err.Opt)
+		assert.EqualValues(t, 't', err.OptOpt)
 		assert.NotEqual(t, "37", r.nsecs)
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -95,7 +171,7 @@ func TestGetOptLongNoTime(t *testing.T) {
 		assert.False(t, r.tfnd)
 		assert.IsType(t, &ErrRequiredArg{}, r.err)
 		err := r.err.(*ErrRequiredArg)
-		assert.EqualValues(t, 't', err.Opt)
+		assert.EqualValues(t, 't', err.OptOpt)
 		assert.NotEqual(t, "37", r.nsecs)
 		assert.True(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -112,50 +188,68 @@ func TestGetOptLongNoTime(t *testing.T) {
 }
 
 func TestGetOptLongUnknownOpt(t *testing.T) {
-	a1 := func(t *testing.T, r *getOptLongTestResult) {
+	a1 := func(t *testing.T, r *getOptLongTestResult, u string) {
 		assert.True(t, r.tfnd)
 		assert.Equal(t, "37", r.nsecs)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		assert.EqualValues(t, 'f', err.Opt)
+		if err.OptArg == "" {
+			assert.EqualValues(t, u, fmt.Sprintf("%c", err.OptOpt))
+		} else {
+			assert.EqualValues(t, u, err.OptArg)
+		}
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
 	}
-	a1(t, testGetOptLongGlobal(t, "tgunkn01", "--t=37", "-f", "-n", "effie"))
-	a1(t, testGetOptLongGlobal(t, "tgunkn02", "--ti=37", "-f", "-n", "effie"))
-	a1(t, testGetOptLongGlobal(t, "tgunkn03", "--tim=37", "-f", "-n", "effie"))
-	a1(t, testGetOptLongGlobal(t, "tgunkn04", "--time=37", "-f", "-n", "effie"))
+	a1(t, testGetOptLongGlobal(t, "tgunkn01a", "--t=37", "-f", "-n", "effie"), "f")
+	a1(t, testGetOptLongGlobal(t, "tgunkn02a", "--ti=37", "-fu", "-n", "effie"), "f")
+	a1(t, testGetOptLongGlobal(t, "tgunkn03a", "--tim=37", "-fub", "-n", "effie"), "f")
+	a1(t, testGetOptLongGlobal(t, "tgunkn04a", "--time=37", "-fubar", "-n", "effie"), "f")
 
-	a1(t, testGetOptLongInstance(t, "tiunkn01", "--t=37", "-f", "-n", "effie"))
-	a1(t, testGetOptLongInstance(t, "tiunkn02", "--ti=37", "-f", "-n", "effie"))
-	a1(t, testGetOptLongInstance(t, "tiunkn03", "--tim=37", "-f", "-n", "effie"))
-	a1(t, testGetOptLongInstance(t, "tiunkn04", "--time=37", "-f", "-n", "effie"))
+	a1(t, testGetOptLongGlobal(t, "tgunkn01b", "--t=37", "-W", "f", "-n", "effie"), "f")
+	a1(t, testGetOptLongGlobal(t, "tgunkn02b", "--ti=37", "-W", "fu", "-n", "effie"), "fu")
+	a1(t, testGetOptLongGlobal(t, "tgunkn03b", "--tim=37", "-W", "fub", "-n", "effie"), "fub")
+	a1(t, testGetOptLongGlobal(t, "tgunkn04b", "--time=37", "-W", "fubar", "-n", "effie"), "fubar")
 
-	a2 := func(t *testing.T, r *getOptLongTestResult) {
+	a1(t, testGetOptLongInstance(t, "tiunkn01a", "--t=37", "-f", "-n", "effie"), "f")
+	a1(t, testGetOptLongInstance(t, "tiunkn02a", "--ti=37", "-fu", "-n", "effie"), "f")
+	a1(t, testGetOptLongInstance(t, "tiunkn03a", "--tim=37", "-fub", "-n", "effie"), "f")
+	a1(t, testGetOptLongInstance(t, "tiunkn04a", "--time=37", "-fubar", "-n", "effie"), "f")
+
+	a1(t, testGetOptLongInstance(t, "tiunkn01b", "--t=37", "-W", "f", "-n", "effie"), "f")
+	a1(t, testGetOptLongInstance(t, "tiunkn02b", "--ti=37", "-W", "fu", "-n", "effie"), "fu")
+	a1(t, testGetOptLongInstance(t, "tiunkn03b", "--tim=37", "-W", "fub", "-n", "effie"), "fub")
+	a1(t, testGetOptLongInstance(t, "tiunkn04b", "--time=37", "-W", "fubar", "-n", "effie"), "fubar")
+
+	a2 := func(t *testing.T, r *getOptLongTestResult, u string) {
 		assert.True(t, r.tfnd)
 		assert.Equal(t, "37", r.nsecs)
 		assert.True(t, r.nfnd)
 		assert.Equal(t, "", r.name)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		assert.EqualValues(t, 'f', err.Opt)
+		if err.OptArg == "" {
+			assert.EqualValues(t, u, fmt.Sprintf("%c", err.OptOpt))
+		} else {
+			assert.EqualValues(t, u, err.OptArg)
+		}
 	}
-	a2(t, testGetOptLongGlobal(t, "tgunkn05", "--t=37", "-n", "effie", "-f"))
-	a2(t, testGetOptLongGlobal(t, "tgunkn06", "--ti=37", "-n", "effie", "-f"))
-	a2(t, testGetOptLongGlobal(t, "tgunkn07", "--tim=37", "-n", "effie", "-f"))
-	a2(t, testGetOptLongGlobal(t, "tgunkn08", "--time=37", "-n", "effie", "-f"))
+	a2(t, testGetOptLongGlobal(t, "tgunkn05", "--t=37", "-n", "effie", "-f"), "f")
+	a2(t, testGetOptLongGlobal(t, "tgunkn06", "--ti=37", "-n", "effie", "-W", "f"), "f")
+	a2(t, testGetOptLongGlobal(t, "tgunkn07", "--tim=37", "-n", "effie", "-fu"), "f")
+	a2(t, testGetOptLongGlobal(t, "tgunkn08", "--time=37", "-n", "effie", "-W", "fubar"), "fubar")
 
-	a2(t, testGetOptLongInstance(t, "tiunkn05", "--t=37", "-n", "effie", "-f"))
-	a2(t, testGetOptLongInstance(t, "tiunkn06", "--ti=37", "-n", "effie", "-f"))
-	a2(t, testGetOptLongInstance(t, "tiunkn07", "--tim=37", "-n", "effie", "-f"))
-	a2(t, testGetOptLongInstance(t, "tiunkn08", "--time=37", "-n", "effie", "-f"))
+	a2(t, testGetOptLongInstance(t, "tiunkn05", "--t=37", "-n", "effie", "-f"), "f")
+	a2(t, testGetOptLongInstance(t, "tiunkn06", "--ti=37", "-n", "effie", "-W", "f"), "f")
+	a2(t, testGetOptLongInstance(t, "tiunkn07", "--tim=37", "-n", "effie", "-fu"), "f")
+	a2(t, testGetOptLongInstance(t, "tiunkn08", "--time=37", "-n", "effie", "-W", "fubar"), "fubar")
 
 	a3 := func(t *testing.T, r *getOptLongTestResult) {
 		assert.True(t, r.tfnd)
 		assert.Equal(t, "37", r.nsecs)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		assert.EqualValues(t, 0, err.Opt)
+		assert.EqualValues(t, 0, err.OptOpt)
 		assert.EqualValues(t, "hello", r.optArg)
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -217,7 +311,7 @@ func testGetOptLongGlobal(t *testing.T, argv ...string) *getOptLongTestResult {
 	}
 
 	for {
-		opt := GetOptLong(argv, ":nt:", longOpts, &longInd)
+		opt := GetOptLong(argv, ":W;nt:", longOpts, &longInd)
 
 		if opt == -1 {
 			break
@@ -239,9 +333,12 @@ func testGetOptLongGlobal(t *testing.T, argv ...string) *getOptLongTestResult {
 		case ':':
 			r.err = &ErrRequiredArg{OptOpt}
 			return r
+		case 'W':
+			r.err = &ErrUnknownOpt{OptOpt, OptArg}
+			return r
 		default: // ?
 			r.optArg = OptArg
-			r.err = &ErrUnknownOpt{OptOpt}
+			r.err = &ErrUnknownOpt{OptOpt, ""}
 			return r
 		}
 	}
@@ -285,7 +382,7 @@ func testGetOptLongInstance(t *testing.T, argv ...string) *getOptLongTestResult 
 	}
 
 	for {
-		opt := p.GetOptLong(argv, ":nt:", longOpts, &longInd)
+		opt := p.GetOptLong(argv, ":W;nt:", longOpts, &longInd)
 
 		if opt == -1 {
 			break
@@ -307,9 +404,12 @@ func testGetOptLongInstance(t *testing.T, argv ...string) *getOptLongTestResult 
 		case ':':
 			r.err = &ErrRequiredArg{p.OptOpt}
 			return r
+		case 'W':
+			r.err = &ErrUnknownOpt{p.OptOpt, p.OptArg}
+			return r
 		default: // ?
 			r.optArg = p.OptArg
-			r.err = &ErrUnknownOpt{p.OptOpt}
+			r.err = &ErrUnknownOpt{p.OptOpt, ""}
 			return r
 		}
 	}
