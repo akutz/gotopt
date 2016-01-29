@@ -1,13 +1,8 @@
 package gotopt
 
 import (
-	"log"
 	"os"
 	"strings"
-)
-
-var (
-	debug = os.Getenv("GOTOPT_DEBUG") == "true"
 )
 
 // strncmp compares up to num characters of the string str1 to those of the
@@ -63,20 +58,6 @@ func toIntFromBool(b bool) int {
 		return 1
 	}
 	return 0
-}
-
-func logln(s ...interface{}) {
-	if !debug {
-		return
-	}
-	log.Println(s)
-}
-
-func logf(f string, s ...interface{}) {
-	if !debug {
-		return
-	}
-	log.Printf(f, s...)
 }
 
 func parseLongOptSize(s string, nextChar int) (nameEnd, nameLen int) {

@@ -1,9 +1,6 @@
 /*
 Package gotopt is a port of the GNU C getopt library -
 https://sourceware.org/git/?p=glibc.git;a=blob;f=posix/getopt.c;hb=HEAD.
-
-While not a one-to-one port, this project maintains the logic and behavior of
-the stdlib getopt library.
 */
 package gotopt
 
@@ -12,6 +9,56 @@ import (
 	"os"
 	"strings"
 )
+
+// OrderTypes are RequireOrder, Permute, and ReturnInOrder
+type OrderTypes int
+
+const (
+	// RequireOrder means don't recognize them as options;
+	// stop option processing when the first non-option is seen.
+	//
+	// This mode of operation is selected by either setting the environment
+	// variable POSIXLY_CORRECT, or using `+' as the first character
+	// of the list of option characters.
+	RequireOrder OrderTypes = iota
+
+	// Permute is the default. We permute the contents of argv as we scan,
+	// so that eventually all the non-options are at the end. This allows
+	// options to be given in any order, even with programs that were not
+	// written to expect this.
+	Permute
+
+	// ReturnInOrder is an option available to programs that were written
+	// to expect options and other argv-elements in any order and that care
+	// about the ordering of the two. We describe each non-option argv-element
+	// as if it were the argument of an option with character code 1.
+	// Using `-' as the first character of the list of option characters
+	// selects this mode of operation.
+	ReturnInOrder
+)
+
+type getOptData struct {
+	optInd int
+	optErr bool
+	optOpt int
+	optArg string
+
+	initialized    bool
+	nextChar       *int
+	ordering       OrderTypes
+	posixlyCorrect bool
+	firstNonOpt    int
+	lastNonOpt     int
+}
+
+// GetOptParser can be used to parse multiple argument slices.
+type GetOptParser struct {
+	OptInd int
+	OptErr bool
+	OptOpt int
+	OptArg string
+	data   *getOptData
+}
 
 var (
 	// OptInd is
@@ -29,28 +76,6 @@ var (
 	parser = NewGetOptParser()
 )
 
-// GetOpt TODO
-func GetOpt(argv []string, optString string) int {
-
-	return parser.GetOpt(argv, optString)
-}
-
-// GetOptLong TODO
-func GetOptLong(
-	argv []string, optString string,
-	longOpts []*LongOption, longInd *int) int {
-
-	return parser.GetOptLong(argv, optString, longOpts, longInd)
-}
-
-// GetOptLongOnly TODO
-func GetOptLongOnly(
-	argv []string, optString string,
-	longOpts []*LongOption, longInd *int) int {
-
-	return parser.GetOptLongOnly(argv, optString, longOpts, longInd)
-}
-
 // NewGetOptParser initializes a new instance of the GetOptParser class.
 func NewGetOptParser() *GetOptParser {
 	return &GetOptParser{
@@ -62,25 +87,15 @@ func NewGetOptParser() *GetOptParser {
 }
 
 // GetOpt TODO
+func GetOpt(argv []string, optString string) int {
+
+	return parser.GetOpt(argv, optString)
+}
+
+// GetOpt TODO
 func (p *GetOptParser) GetOpt(argv []string, optString string) int {
 
 	return p.getOptInternal(argv, optString, nil, nil, false, false)
-}
-
-// GetOptLong TODO
-func (p *GetOptParser) GetOptLong(
-	argv []string, optString string,
-	longOpts []*LongOption, longInd *int) int {
-
-	return p.getOptInternal(argv, optString, longOpts, longInd, false, false)
-}
-
-// GetOptLongOnly TODO
-func (p *GetOptParser) GetOptLongOnly(
-	argv []string, optString string,
-	longOpts []*LongOption, longInd *int) int {
-
-	return p.getOptInternal(argv, optString, longOpts, longInd, true, false)
 }
 
 func (p *GetOptParser) getOptInternal(argv []string, optString string,
@@ -125,12 +140,12 @@ func getOptInternalR(argc int, argv []string, optString string,
 	longOpts []*LongOption, longInd *int,
 	longOnly bool, d *getOptData, posixlyCorrect bool) int {
 
-	logf("argc=%d\n", argc)
+	Debugf("argc=%d", argc)
 
 	printErrors := d.optErr
 
 	if argc < 1 {
-		logln("argc < 1")
+		Debugln("argc < 1")
 		return -1
 	}
 
@@ -158,8 +173,8 @@ func getOptInternalR(argc int, argv []string, optString string,
 
 	if d.nextChar == nil || *d.nextChar > len(argv[d.optInd]) {
 
-		logf("d.optInd=%d\n", d.optInd)
-		logln("d.nextChar == nil")
+		Debugf("d.optInd=%d", d.optInd)
+		Debugln("d.nextChar == nil")
 
 		// advance to the next ARGV-element
 
@@ -172,24 +187,24 @@ func getOptInternalR(argc int, argv []string, optString string,
 			d.firstNonOpt = d.optInd
 		}
 
-		logf("d.firstNonOpt=%d\n", d.firstNonOpt)
-		logf("d.lastNonOpt=%d\n", d.lastNonOpt)
-		logf("d.ordering=%d\n", d.ordering)
+		Debugf("d.firstNonOpt=%d", d.firstNonOpt)
+		Debugf("d.lastNonOpt=%d", d.lastNonOpt)
+		Debugf("d.ordering=%d", d.ordering)
 
 		if d.ordering == Permute {
 
-			logln("d.ordering=permute")
+			Debugln("d.ordering=permute")
 
 			// if we have just processed some options following some
 			// non-options, exchange them so that the options come first.
 			if d.firstNonOpt != d.lastNonOpt &&
 				d.lastNonOpt != d.optInd {
 
-				logln("exchange(argv, d)")
+				Debugln("exchange(argv, d)")
 				exchange(argv, d)
 			} else if d.lastNonOpt != d.optInd {
 
-				logln("d.firstNonOpt = d.optInd")
+				Debugln("d.firstNonOpt = d.optInd")
 				d.firstNonOpt = d.optInd
 			}
 
@@ -200,7 +215,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 			}
 
 			d.lastNonOpt = d.optInd
-			logf("d.optInd=%d\n", d.optInd)
+			Debugf("d.optInd=%d", d.optInd)
 		}
 
 		// the special argv-element `--' means premature end of options.
@@ -208,7 +223,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 		// as if it were an option, then skip everything else like a non-option.
 		if d.optInd != argc && argv[d.optInd] == "--" {
 
-			logln(`d.optInd != argc && argv[d.optInd] == "--"`)
+			Debugln(`d.optInd != argc && argv[d.optInd] == "--"`)
 
 			d.optInd++
 
@@ -229,7 +244,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 			if d.firstNonOpt != d.lastNonOpt {
 				d.optInd = d.firstNonOpt
 			}
-			logln("d.optInd == argc")
+			Debugln("d.optInd == argc")
 			return -1
 		}
 
@@ -237,7 +252,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 		// either stop the scan or describe it to the caller and pass it by.
 		if nonOptionP() {
 			if d.ordering == RequireOrder {
-				logln("d.ordering == RequireOrder")
+				Debugln("d.ordering == RequireOrder")
 				return -1
 			}
 			d.optArg = argv[d.optInd]
@@ -301,24 +316,24 @@ func getOptInternalR(argc int, argv []string, optString string,
 			optionIndex int
 		)
 
-		logln("hasLongOpts")
+		Debugln("hasLongOpts")
 
-		logf("argv[d.optInd]=%s\n", argv[d.optInd])
+		Debugf("argv[d.optInd]=%s", argv[d.optInd])
 
 		nameEnd, nameLen = parseLongOptSize(argv[d.optInd], *d.nextChar)
 
-		logf("nameEnd=%d, nameLen=%d\n", nameEnd, nameLen)
-		logf("argv[d.optInd][*d.nextChar:]=%s\n", argv[d.optInd][*d.nextChar:])
+		Debugf("nameEnd=%d, nameLen=%d", nameEnd, nameLen)
+		Debugf("argv[d.optInd][*d.nextChar:]=%s", argv[d.optInd][*d.nextChar:])
 
 		// test all long options for either exact match or abbreviated matches
 		for optionIndex, p = range longOpts {
 
-			logf("p.Name=%s\n", p.Name)
+			Debugf("p.Name=%s", p.Name)
 			if strncmpb(p.Name, argv[d.optInd][*d.nextChar:], nameLen) {
 
-				logf("exact match found: p.Name=%s", p.Name)
-				logf(
-					"argv[d.optInd][*d.nextChar:]=%s\n",
+				Debugf("exact match found: p.Name=%s", p.Name)
+				Debugf(
+					"argv[d.optInd][*d.nextChar:]=%s",
 					argv[d.optInd][*d.nextChar:])
 
 				// exact match found
@@ -351,7 +366,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 
 		if amBigList != nil && !exact {
 
-			logln("amBigList != nil && !exact")
+			Debugln("amBigList != nil && !exact")
 
 			if printErrors {
 				first := &longOptList{
@@ -385,7 +400,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 
 		if pFound != nil {
 
-			logln("pFound != nil")
+			Debugln("pFound != nil")
 
 			optionIndex = indFound
 			d.optInd++
@@ -531,7 +546,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 				d.nextChar = nil
 			}
 		} else {
-			logln("requires arg")
+			Debugln("requires arg")
 			// this is an option that requires an argument
 			if d.nextChar != nil {
 				d.optArg = argv[d.optInd][*d.nextChar:]
@@ -548,7 +563,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 				}
 				d.optOpt = int(c)
 
-				logf("optString=%s\n", optString)
+				Debugf("optString=%s", optString)
 
 				if optString[0] == ':' {
 					c = ':'
@@ -560,7 +575,7 @@ func getOptInternalR(argc int, argv []string, optString string,
 				// increment it again when taking next ARGV-elt as argument.
 				d.optArg = argv[d.optInd]
 				d.optInd++
-				logf("opt=%c arg=%s\n", c, d.optArg)
+				Debugf("opt=%c arg=%s", c, d.optArg)
 			}
 
 			d.nextChar = nil
@@ -604,7 +619,7 @@ func getOptInit(
 		d.ordering = Permute
 	}
 
-	logf("optString=%s\n", optString)
+	Debugf("optString=%s", optString)
 	return optString
 }
 
@@ -633,7 +648,7 @@ func exchange(argv []string, d *getOptData) {
 
 		if top-middle > middle-bottom {
 
-			logln("bottom segment is the short one")
+			Debugln("bottom segment is the short one")
 
 			// bottom segment is the short one.
 			len := middle - bottom
@@ -650,7 +665,7 @@ func exchange(argv []string, d *getOptData) {
 
 		} else {
 
-			logln("top segment is the short one")
+			Debugln("top segment is the short one")
 
 			// top segment is the short one.
 			len := top - middle
