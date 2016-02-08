@@ -1,10 +1,36 @@
 package gotopt
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestGetOptLoop(t *testing.T) {
+	f := func() {
+		OptInd = 1
+	}
+	f()
+	defer f()
+
+	argv := []string{"ProgramName", "-nt37", "effie"}
+	for {
+		opt := GetOpt(argv, ":nt:")
+		if opt == -1 {
+			break
+		}
+		switch opt {
+		case 'n':
+			fmt.Println("-n detected")
+		case 't':
+			fmt.Printf("-t detected, arg=%s\n", OptArg)
+		}
+	}
+	if OptInd < len(argv) {
+		fmt.Printf("name is %s\n", argv[OptInd])
+	}
+}
 
 func TestGetOptOk(t *testing.T) {
 	assertOk(t, testGetOptGlobal(t, "tgok01", "-t", "37", "-n", "effie"))
@@ -24,10 +50,10 @@ func TestGetOptOk(t *testing.T) {
 	assertOk(t, testGetOptInstance(t, "tiok04", "effie", "-nt", "37"))
 	assertOk(t, testGetOptInstance(t, "tiok05", "effie", "-n", "-t", "37"))
 
-	assertOk(t, testGetOptGlobal(t, "tiok06", "-t37", "-n", "effie"))
-	assertOk(t, testGetOptGlobal(t, "tiok07", "-nt37", "effie"))
-	assertOk(t, testGetOptGlobal(t, "tiok08", "-t37", "effie", "-n"))
-	assertOk(t, testGetOptGlobal(t, "tiok09", "effie", "-nt37"))
+	assertOk(t, testGetOptInstance(t, "tiok06", "-t37", "-n", "effie"))
+	assertOk(t, testGetOptInstance(t, "tiok07", "-nt37", "effie"))
+	assertOk(t, testGetOptInstance(t, "tiok08", "-t37", "effie", "-n"))
+	assertOk(t, testGetOptInstance(t, "tiok09", "effie", "-nt37"))
 }
 
 func TestGetOptMissingName(t *testing.T) {
@@ -50,7 +76,7 @@ func TestGetOptNoTime(t *testing.T) {
 		assert.False(t, r.tfnd)
 		assert.IsType(t, &ErrRequiredArg{}, r.err)
 		err := r.err.(*ErrRequiredArg)
-		assert.EqualValues(t, 't', err.OptOpt)
+		assert.EqualValues(t, 't', err.Opt)
 		assert.NotEqual(t, "37", r.nsecs)
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -61,7 +87,7 @@ func TestGetOptNoTime(t *testing.T) {
 		assert.False(t, r.tfnd)
 		assert.IsType(t, &ErrRequiredArg{}, r.err)
 		err := r.err.(*ErrRequiredArg)
-		assert.EqualValues(t, 't', err.OptOpt)
+		assert.EqualValues(t, 't', err.Opt)
 		assert.NotEqual(t, "37", r.nsecs)
 		assert.True(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -72,7 +98,7 @@ func TestGetOptNoTime(t *testing.T) {
 		assert.False(t, r.tfnd)
 		assert.IsType(t, &ErrRequiredArg{}, r.err)
 		err := r.err.(*ErrRequiredArg)
-		assert.EqualValues(t, 't', err.OptOpt)
+		assert.EqualValues(t, 't', err.Opt)
 		assert.NotEqual(t, "37", r.nsecs)
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -83,7 +109,7 @@ func TestGetOptNoTime(t *testing.T) {
 		assert.False(t, r.tfnd)
 		assert.IsType(t, &ErrRequiredArg{}, r.err)
 		err := r.err.(*ErrRequiredArg)
-		assert.EqualValues(t, 't', err.OptOpt)
+		assert.EqualValues(t, 't', err.Opt)
 		assert.NotEqual(t, "37", r.nsecs)
 		assert.True(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -97,7 +123,7 @@ func TestGetOptUnknownOpt(t *testing.T) {
 		assert.Equal(t, "37", r.nsecs)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		assert.EqualValues(t, 'f', err.OptOpt)
+		assert.EqualValues(t, 'f', err.Opt)
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
 	}
@@ -110,7 +136,7 @@ func TestGetOptUnknownOpt(t *testing.T) {
 		assert.Equal(t, "", r.name)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		assert.EqualValues(t, 'f', err.OptOpt)
+		assert.EqualValues(t, 'f', err.Opt)
 	}
 
 	{
@@ -119,7 +145,7 @@ func TestGetOptUnknownOpt(t *testing.T) {
 		assert.Equal(t, "37", r.nsecs)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		assert.EqualValues(t, 'f', err.OptOpt)
+		assert.EqualValues(t, 'f', err.Opt)
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
 	}
@@ -132,7 +158,7 @@ func TestGetOptUnknownOpt(t *testing.T) {
 		assert.Equal(t, "", r.name)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		assert.EqualValues(t, 'f', err.OptOpt)
+		assert.EqualValues(t, 'f', err.Opt)
 	}
 }
 

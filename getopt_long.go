@@ -40,23 +40,26 @@ type longOptList struct {
 	next *longOptList
 }
 
-// GetOptLong TODO
+// GetOptLong behaves identically to GetOpt except long options beginning with
+// two dashes '--' are also accepted.
 func GetOptLong(
 	argv []string, optString string,
 	longOpts []*LongOption, longInd *int) int {
 
-	return parser.GetOptLong(argv, optString, longOpts, longInd)
+	return getOptParser.GetOptLong(argv, optString, longOpts, longInd)
 }
 
-// GetOptLongOnly TODO
+// GetOptLongOnly behavs identically to GetOptLong except that only long
+// options are accepted.
 func GetOptLongOnly(
-	argv []string, optString string,
-	longOpts []*LongOption, longInd *int) int {
+	argv []string, longOpts []*LongOption, longInd *int) int {
 
-	return parser.GetOptLongOnly(argv, optString, longOpts, longInd)
+	return getOptParser.GetOptLongOnly(argv, longOpts, longInd)
 }
 
-// GetOptLong TODO
+// GetOptLong behaves identically to the global GetOptLong function except all
+// reads and writes from and to the fields OptArg, OptInd, OptErr, OptOpt are
+// instance operations.
 func (p *GetOptParser) GetOptLong(
 	argv []string, optString string,
 	longOpts []*LongOption, longInd *int) int {
@@ -64,10 +67,11 @@ func (p *GetOptParser) GetOptLong(
 	return p.getOptInternal(argv, optString, longOpts, longInd, false, false)
 }
 
-// GetOptLongOnly TODO
+// GetOptLongOnly behaves identically to the global GetOptLongOnly function
+// except all reads and writes from and to the fields OptArg, OptInd, OptErr,
+// OptOpt are instance operations.
 func (p *GetOptParser) GetOptLongOnly(
-	argv []string, optString string,
-	longOpts []*LongOption, longInd *int) int {
+	argv []string, longOpts []*LongOption, longInd *int) int {
 
-	return p.getOptInternal(argv, optString, longOpts, longInd, true, false)
+	return p.getOptInternal(argv, "", longOpts, longInd, true, false)
 }

@@ -98,9 +98,9 @@ func TestGetOptLongMissingName(t *testing.T) {
 	assertLongNoName(t, testGetOptLongGlobal(t, "tgnn07", "--time", "37", "-n"))
 	assertLongNoName(t, testGetOptLongGlobal(t, "tgnn08", "-n", "--time", "37"))
 
-	assertLongNoName(t, testGetOptLongGlobal(t, "tgok09", "--ti", "37", "-n"))
-	assertLongNoName(t, testGetOptLongGlobal(t, "tgok10", "-n", "--tim", "37"))
-	assertLongNoName(t, testGetOptLongGlobal(t, "tgok11", "--t", "37", "-n"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnn09", "--ti", "37", "-n"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnn10", "-n", "--tim", "37"))
+	assertLongNoName(t, testGetOptLongGlobal(t, "tgnn11", "--t", "37", "-n"))
 
 	assertLongNoName(t, testGetOptLongInstance(t, "tinn01", "--time=37", "-n"))
 	assertLongNoName(t, testGetOptLongInstance(t, "tinn02", "-n", "--time=37"))
@@ -112,9 +112,9 @@ func TestGetOptLongMissingName(t *testing.T) {
 	assertLongNoName(t, testGetOptLongInstance(t, "tinn07", "--time", "37", "-n"))
 	assertLongNoName(t, testGetOptLongInstance(t, "tinn08", "-n", "--time", "37"))
 
-	assertLongNoName(t, testGetOptLongInstance(t, "tgok09", "--ti", "37", "-n"))
-	assertLongNoName(t, testGetOptLongInstance(t, "tgok10", "-n", "--tim", "37"))
-	assertLongNoName(t, testGetOptLongInstance(t, "tgok11", "--t", "37", "-n"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tgnn09", "--ti", "37", "-n"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tgnn10", "-n", "--tim", "37"))
+	assertLongNoName(t, testGetOptLongInstance(t, "tgnn11", "--t", "37", "-n"))
 }
 
 func TestGetOptLongMissingNameW(t *testing.T) {
@@ -152,7 +152,7 @@ func TestGetOptLongNoTime(t *testing.T) {
 		assert.False(t, r.tfnd)
 		assert.IsType(t, &ErrRequiredArg{}, r.err)
 		err := r.err.(*ErrRequiredArg)
-		assert.EqualValues(t, 't', err.OptOpt)
+		assert.EqualValues(t, 't', err.Opt)
 		assert.NotEqual(t, "37", r.nsecs)
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -171,7 +171,7 @@ func TestGetOptLongNoTime(t *testing.T) {
 		assert.False(t, r.tfnd)
 		assert.IsType(t, &ErrRequiredArg{}, r.err)
 		err := r.err.(*ErrRequiredArg)
-		assert.EqualValues(t, 't', err.OptOpt)
+		assert.EqualValues(t, 't', err.Opt)
 		assert.NotEqual(t, "37", r.nsecs)
 		assert.True(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -193,10 +193,10 @@ func TestGetOptLongUnknownOpt(t *testing.T) {
 		assert.Equal(t, "37", r.nsecs)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		if err.OptArg == "" {
-			assert.EqualValues(t, u, fmt.Sprintf("%c", err.OptOpt))
+		if err.LongName == "" {
+			assert.EqualValues(t, u, fmt.Sprintf("%c", err.Opt))
 		} else {
-			assert.EqualValues(t, u, err.OptArg)
+			assert.EqualValues(t, u, err.LongName)
 		}
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
@@ -228,10 +228,10 @@ func TestGetOptLongUnknownOpt(t *testing.T) {
 		assert.Equal(t, "", r.name)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		if err.OptArg == "" {
-			assert.EqualValues(t, u, fmt.Sprintf("%c", err.OptOpt))
+		if err.LongName == "" {
+			assert.EqualValues(t, u, fmt.Sprintf("%c", err.Opt))
 		} else {
-			assert.EqualValues(t, u, err.OptArg)
+			assert.EqualValues(t, u, err.LongName)
 		}
 	}
 	a2(t, testGetOptLongGlobal(t, "tgunkn05", "--t=37", "-n", "effie", "-f"), "f")
@@ -249,8 +249,8 @@ func TestGetOptLongUnknownOpt(t *testing.T) {
 		assert.Equal(t, "37", r.nsecs)
 		assert.IsType(t, &ErrUnknownOpt{}, r.err)
 		err := r.err.(*ErrUnknownOpt)
-		assert.EqualValues(t, 0, err.OptOpt)
-		assert.EqualValues(t, "hello", r.optArg)
+		assert.EqualValues(t, 0, err.Opt)
+		assert.EqualValues(t, "hello", err.LongName)
 		assert.False(t, r.nfnd)
 		assert.Equal(t, "", r.name)
 	}
@@ -338,7 +338,7 @@ func testGetOptLongGlobal(t *testing.T, argv ...string) *getOptLongTestResult {
 			return r
 		default: // ?
 			r.optArg = OptArg
-			r.err = &ErrUnknownOpt{OptOpt, ""}
+			r.err = &ErrUnknownOpt{OptOpt, OptArg}
 			return r
 		}
 	}
@@ -409,7 +409,7 @@ func testGetOptLongInstance(t *testing.T, argv ...string) *getOptLongTestResult 
 			return r
 		default: // ?
 			r.optArg = p.OptArg
-			r.err = &ErrUnknownOpt{p.OptOpt, ""}
+			r.err = &ErrUnknownOpt{p.OptOpt, p.OptArg}
 			return r
 		}
 	}

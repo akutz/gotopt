@@ -1,27 +1,34 @@
 package gotopt
 
 import (
+	"errors"
 	"fmt"
 )
 
 // ErrRequiredArg is the error for when a required argument is missing.
 type ErrRequiredArg struct {
-	OptOpt int
+	Opt int
 }
 
 func (e *ErrRequiredArg) Error() string {
-	return fmt.Sprintf("arg required for opt '%c'", e.OptOpt)
+	return fmt.Sprintf("arg required for opt '%c'", e.Opt)
 }
 
 // ErrUnknownOpt is the error for when an unknown option is encountered.
 type ErrUnknownOpt struct {
-	OptOpt int
-	OptArg string
+	Opt      int
+	LongName string
 }
 
 func (e *ErrUnknownOpt) Error() string {
-	if OptArg == "" {
-		return fmt.Sprintf("unknown option '%c'", e.OptOpt)
+	if e.LongName == "" {
+		return fmt.Sprintf("unknown option '-%c'", e.Opt)
 	}
-	return fmt.Sprintf("unknown option '%s'", e.OptArg)
+	return fmt.Sprintf("unknown option '--%s'", e.LongName)
 }
+
+var (
+	// ErrEmptyArgList is returned by Parser.Parse and Parser.ParseAll when
+	// there is an empty argument list.
+	ErrEmptyArgList = errors.New("empty arg list")
+)
