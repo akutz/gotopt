@@ -25,7 +25,7 @@ func strncmp(str1, str2 string, num int) int {
 	lstr2 := len(str2)
 
 	for x := 0; x < num; x++ {
-		if (lstr1 < x && lstr2 >= x) || (lstr2 < x && lstr1 >= x) {
+		if x >= lstr1 || x >= lstr2 {
 			break
 		}
 		if str1[x] < str2[x] {

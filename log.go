@@ -11,16 +11,16 @@ var (
 	debug = os.Getenv("GOTOPT_DEBUG") == "true"
 )
 
-// Debugln logs the arguments only if the logging level is DEBUG or higher.
-func Debugln(args ...interface{}) {
+// debugln logs the arguments only if the logging level is DEBUG or higher.
+func debugln(args ...interface{}) {
 	if !debug {
 		return
 	}
-	log.Println(args)
+	log.Println(args...)
 }
 
-// Debugf logs the arguments only if the logging level is DEBUG or higher.
-func Debugf(format string, args ...interface{}) {
+// debugf logs the arguments only if the logging level is DEBUG or higher.
+func debugf(format string, args ...interface{}) {
 	if !debug {
 		return
 	}

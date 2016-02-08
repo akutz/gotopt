@@ -1,56 +1,47 @@
-# Gotopt [![Build Status](https://travis-ci.org/akutz/gotopt.svg)](https://travis-ci.org/akutz/gotopt) [![Coverage Status](https://coveralls.io/repos/akutz/gotopt/badge.svg?branch=master&service=github)](https://coveralls.io/github/akutz/gotopt?branch=master)
-
-Gotopt is a Go port of the [C stdlib getopt library](https://goo.gl/cQI7VN).
-The goal of this project is to provide a flag framework for Go that behaves
-identically to C's getopt.
-
-This package also includes functionality built on top of the getopt port, such
-as:
+/*
+Package gotopt is a pure-go port of the GNU C getopt library
+https://goo.gl/cQI7VN. This package also includes functionality built on top
+of the getopt port, such as:
 
 * Parser, a channel-based parser for receiving options as they are parsed along
 with a navigable, doubly-linked list of the parser state at the time which the
 option was parsed.
+
 * The package "github.com/akutz/gotopt/flag", a drop-in replacement for the
-golang stdlib ["flag" package](https://goo.gl/gKusxh) as well as its de facto
-replacement package, ["pflag"](https://goo.gl/9wvL9j).
+golang stdlib "flag" package (https://goo.gl/gKusxh) as well as its de facto
+replacement package, "pflag" (https://goo.gl/9wvL9j).
 
 It is also possible to entirely ignore all of the additional features and
 use purely the same logic one would with the original getopt functions. The
 following example parses the command line using the traditional, getopt logic:
 
-```go
-argv := []string{"ProgramName", "-nt37", "effie"}
-for {
-    opt := GetOpt(argv, ":nt:")
-    if opt == -1 {
-        break
+    argv := []string{"ProgramName", "-nt37", "effie"}
+    for {
+        opt := GetOpt(argv, ":nt:")
+        if opt == -1 {
+            break
+        }
+        switch opt {
+        case 'n':
+            fmt.Println("-n detected")
+        case 't':
+            fmt.Printf("-t detected, arg=%s\n", OptArg)
+        }
     }
-    switch opt {
-    case 'n':
-        fmt.Println("-n detected")
-    case 't':
-        fmt.Printf("-t detected, arg=%s\n", OptArg)
+    if OptInd < len(argv) {
+        fmt.Printf("name is %s\n", argv[OptInd])
     }
-}
-if OptInd < len(argv) {
-    fmt.Printf("name is %s\n", argv[OptInd])
-}
-```
 
 The following text will be printed to stdout:
 
-```shell
--n detected
--t detected, arg=37
-name is effie
-```
+  -n detected
+  -t detected, arg=37
+  name is effie
 
 The above example can be executed locally by executing the following command
 in a shell from inside a cloned version of this repository:
 
-```shell
-$ go test -run TestGetOptLoop -v
-```
+  $ go test -run TestGetOptLoop -v
 
 The example uses standard getopt loop to process arguments using an option
 string until the return value is -1.  The OptInd, OptArg, OptOpt, and OptErr
@@ -65,7 +56,7 @@ and OptErr fields.
 
 For more information on the way the getopt loop behaves, the option string
 format, or anything else related to the getopt logic, please see
-the [following documentation](http://goo.gl/uXjKx9).
+http://goo.gl/uXjKx9.
 
 This package introduces new functionality build on top of getopt, starting with
 the type Parser. Using the NewParser function, a Parser is created that can be
@@ -76,84 +67,74 @@ ParserState instances, which may indicate an Option has been parsed, an
 error has occurred, or if there are no more options remaining, and there are
 any non-option arguments, an array of strings:
 
-```go
-p := NewParser()
-p.Opt('n', "name", NoArgument)
-p.Opt('t', "time", RequiredArgument)
+    p := NewParser()
+    p.Opt('n', "name", NoArgument)
+    p.Opt('t', "time", RequiredArgument)
 
-c, _ := p.Parse([]string{"ProgramName", "-nt37", "effie"})
+    c, _ := p.Parse([]string{"ProgramName", "-nt37", "effie"})
 
-for ps := range c {
-    switch tv := ps.Value().(type) {
-    case Option:
-        fmt.Printf("-%c detected", tv.Opt())
-        if tv.Opt() == 't' {
-            fmt.Printf(", arg=%s", tv.Value())
+    for ps := range c {
+        switch tv := ps.Value().(type) {
+        case Option:
+            fmt.Printf("-%c detected", tv.Opt())
+            if tv.Opt() == 't' {
+                fmt.Printf(", arg=%s", tv.Value())
+            }
+            fmt.Println()
+        case []string:
+            fmt.Printf("name is %s\n", tv[0])
         }
-        fmt.Println()
-    case []string:
-        fmt.Printf("name is %s\n", tv[0])
     }
-}
-```
 
 The following text will be printed to stdout:
 
-```shell
--n detected
--t detected, arg=37
-name is effie
-```
+  -n detected
+  -t detected, arg=37
+  name is effie
 
 The above example can be executed locally by executing the following command
 in a shell from inside a cloned version of this repository:
 
-```shell
-$ go test -run ^TestGotOptParserParse$ -v
-```
+  $ go test -run ^TestGotOptParserParse$ -v
 
 The Parser interface also defines the function ParseAll. Using Parse internally,
 ParseAll doesn't return until all of the options and their arguments have been
 parsed. ParseAll returns the last, received ParserState, which can then be used
 to traverse the list of parsed data:
 
-```go
-p := NewParser()
-p.Opt('n', "name", NoArgument)
-p.Opt('t', "time", RequiredArgument)
+    p := NewParser()
+    p.Opt('n', "name", NoArgument)
+    p.Opt('t', "time", RequiredArgument)
 
-ps, _ := p.ParseAll([]string{"ProgramName", "-nt37", "effie"})
-ps = ps.First()
+    ps, _ := p.ParseAll([]string{"ProgramName", "-nt37", "effie"})
+    ps = ps.First()
 
-for {
-    switch tv := ps.Value().(type) {
-    case Option:
-        fmt.Printf("-%c detected", tv.Opt())
-        if tv.Opt() == 't' {
-            fmt.Printf(", arg=%s", tv.Value())
+    for {
+        switch tv := ps.Value().(type) {
+        case Option:
+            fmt.Printf("-%c detected", tv.Opt())
+            if tv.Opt() == 't' {
+                fmt.Printf(", arg=%s", tv.Value())
+            }
+            fmt.Println()
+        case []string:
+            fmt.Printf("name is %s\n", tv[0])
         }
-        fmt.Println()
-    case []string:
-        fmt.Printf("name is %s\n", tv[0])
+        var ok bool
+        if ps, ok = ps.Next(); !ok {
+            break
+        }
     }
-    var ok bool
-    if ps, ok = ps.Next(); !ok {
-        break
-    }
-}
-```
 
 The following text will be printed to stdout:
 
-```shell
--n detected
--t detected, arg=37
-name is effie
-```
+  -n detected
+  -t detected, arg=37
+  name is effie
 
 The above example can be executed locally by executing the following command
 in a shell from inside a cloned version of this repository:
 
-```shell
-$ go test -run ^TestGotOptParserParseAll$ -v
-```
+  $ go test -run ^TestGotOptParserParseAll$ -v
+*/
+package gotopt
