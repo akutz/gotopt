@@ -1,7 +1,9 @@
 package gotopt
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,8 +11,8 @@ import (
 
 func TestGotOptParserParse(t *testing.T) {
 	p := NewParser()
-	p.Opt('n', "name", NoArgument)
-	p.Opt('t', "time", RequiredArgument)
+	p.Opt('n', "name", NoArgument, "", "")
+	p.Opt('t', "time", RequiredArgument, "", "")
 
 	c, _ := p.Parse([]string{"ProgramName", "-nt37", "effie"})
 
@@ -30,8 +32,8 @@ func TestGotOptParserParse(t *testing.T) {
 
 func TestGotOptParserParseAll(t *testing.T) {
 	p := NewParser()
-	p.Opt('n', "name", NoArgument)
-	p.Opt('t', "time", RequiredArgument)
+	p.Opt('n', "name", NoArgument, "", "")
+	p.Opt('t', "time", RequiredArgument, "", "")
 
 	ps, _ := p.ParseAll([]string{"ProgramName", "-nt37", "effie"})
 	ps = ps.First()
@@ -52,6 +54,47 @@ func TestGotOptParserParseAll(t *testing.T) {
 			break
 		}
 	}
+}
+
+func TestPrintUsage(t *testing.T) {
+	p := NewParser()
+	p.Opt('n', "name", NoArgument, "", "A flag indicating the name is a trailing arg")
+	p.Opt('t', "time", RequiredArgument, "epoch", "The epoch")
+	p.Opt('x', "xist", OptionalArgument, "val", "A value with the answer to our existence")
+	p.Opt(0, "play", NoArgument, "", "Whether or not it's time to play")
+	p.Opt(0, "fast", OptionalArgument, "mph", "How fast to go")
+	p.Opt(0, "slow", RequiredArgument, "mph", "How slow to go")
+	p.Opt('h', "", RequiredArgument, "00-23", "The current hour")
+	p.Opt('o', "", OptionalArgument, "asc|desc", "The current order")
+	p.Opt('z', "", NoArgument, "", "Drop the zero, and get with the hero")
+
+	exp := `    -n, --name       A flag indicating the name is a trailing arg
+    -t, --time epoch The epoch
+    -x, --xist [val] A value with the answer to our existence
+        --play       Whether or not it's time to play
+        --fast [mph] How fast to go
+        --slow mph   How slow to go
+    -h 00-23         The current hour
+    -o [asc|desc]    The current order
+    -z               Drop the zero, and get with the hero
+`
+	assert.NoError(t, p.PrintUsage(os.Stdout))
+	assert.Equal(t, exp, p.Usage())
+
+	exp = `-n, --name       A flag indicating the name is a trailing arg
+-t, --time epoch The epoch
+-x, --xist [val] A value with the answer to our existence
+    --play       Whether or not it's time to play
+    --fast [mph] How fast to go
+    --slow mph   How slow to go
+-h 00-23         The current hour
+-o [asc|desc]    The current order
+-z               Drop the zero, and get with the hero
+`
+
+	b := &bytes.Buffer{}
+	assert.NoError(t, p.PrintAndIndentUsage(b, 0))
+	assert.Equal(t, exp, b.String())
 }
 
 func TestParserOk(t *testing.T) {
@@ -375,10 +418,10 @@ func TestParserDiffStates(t *testing.T) {
 
 func newTestParser() Parser {
 	p := NewParser()
-	p.Opt('n', "name", NoArgument)
-	p.Opt('t', "time", RequiredArgument)
-	p.Opt('x', "xist", OptionalArgument)
-	p.Opt(0, "pulp", NoArgument)
+	p.Opt('n', "name", NoArgument, "", "")
+	p.Opt('t', "time", RequiredArgument, "", "")
+	p.Opt('x', "xist", OptionalArgument, "", "")
+	p.Opt(0, "pulp", NoArgument, "", "")
 	return p
 }
 
