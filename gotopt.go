@@ -3,6 +3,9 @@ package gotopt
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"regexp"
+	"strings"
 )
 
 // Parser can be used to parse multiple argument slices.
@@ -15,7 +18,17 @@ type Parser interface {
 	ParseAll(argv []string) (ParserState, error)
 
 	// Opt registers an option with the parser.
-	Opt(opt int, longName string, optType OptionTypes)
+	Opt(opt int, longName string, optType OptionTypes, argText, usage string)
+
+	// Usage returns the usage text.
+	Usage() string
+
+	// PrintUsage writes the usage text to the provided stream.
+	PrintUsage(w io.Writer) error
+
+	// PrintAndIndentUsage writes the usage text to the provided stream with
+	// each line indented by 'indent' number of white space characters.
+	PrintAndIndentUsage(w io.Writer, indent int) error
 }
 
 // ParserState is the current state of the parser.
@@ -114,13 +127,6 @@ type Option interface {
 	// are created, the first ParserState would have an index of 0, the second,
 	// 1, the third, 2, the fourth 3, and the fifth, 4.
 	Index() int
-}
-
-// optDef is the definition of an option as recorded when registering options.
-type optDef struct {
-	opt      int
-	longName string
-	optType  OptionTypes
 }
 
 // parsedOpt is an option that's been parsed.
@@ -232,18 +238,21 @@ func (p *parserState) LookupOptLong(opt string) []ParserState {
 
 // parser is the backing struct for the Parser interface.
 type parser struct {
-	parsed    bool
-	opts      map[*optDef]*optDef
-	shortOpts map[int]*optDef
-	longOpts  map[string]*optDef
+	parsed      bool
+	opts        map[*optDef]*optDef
+	optsOrdered []*optDef
+	shortOpts   map[int]*optDef
+	longOpts    map[string]*optDef
+	maxUsageLen int
 }
 
 // NewParser returns a new parser.
 func NewParser() Parser {
 	return &parser{
-		opts:      map[*optDef]*optDef{},
-		shortOpts: map[int]*optDef{},
-		longOpts:  map[string]*optDef{},
+		opts:        map[*optDef]*optDef{},
+		shortOpts:   map[int]*optDef{},
+		longOpts:    map[string]*optDef{},
+		optsOrdered: []*optDef{},
 	}
 }
 
@@ -439,21 +448,175 @@ func (p *parser) parse(argv []string, c chan<- ParserState) {
 	}
 }
 
+// optDef is the definition of an option as recorded when registering options.
+type optDef struct {
+	opt      int
+	longName string
+	optType  OptionTypes
+	argText  string
+	desc     string
+	usageLen int
+}
+
+var optionalArgRx = regexp.MustCompile(`^[\[].+[\]]$`)
+
 // Opt registers an option with the parser.
 func (p *parser) Opt(
 	opt int,
 	longName string,
-	optType OptionTypes) {
+	optType OptionTypes,
+	argText, usage string) {
 
 	if opt <= 0 && longName == "" {
 		panic("opt and longName invalid")
 	}
-	o := &optDef{opt: opt, longName: longName, optType: optType}
+
+	if argText == "" && optType != NoArgument {
+		argText = "arg"
+	}
+
+	if optType == OptionalArgument && !optionalArgRx.MatchString(argText) {
+		argText = fmt.Sprintf("[%s]", argText)
+	}
+
+	o := &optDef{
+		opt:      opt,
+		longName: longName,
+		optType:  optType,
+		desc:     usage,
+		argText:  argText,
+	}
+
+	lln := len(o.longName)
+
 	if o.opt > 0 {
 		p.shortOpts[o.opt] = o
 	}
-	if o.longName != "" {
+
+	if lln > 0 {
 		p.longOpts[o.longName] = o
 	}
+
+	if o.opt > 0 {
+		o.usageLen += 2
+		if lln > 0 {
+			o.usageLen += 2
+		} else if o.optType != NoArgument {
+			o.usageLen++
+		}
+	}
+
+	if lln > 0 {
+		o.usageLen += lln + 2
+		if o.optType != NoArgument {
+			o.usageLen++
+		}
+	}
+
+	if o.optType != NoArgument {
+		o.usageLen += len(argText)
+	}
+
+	if o.usageLen > p.maxUsageLen {
+		p.maxUsageLen = o.usageLen
+	}
 	p.opts[o] = o
+	p.optsOrdered = append(p.optsOrdered, o)
+}
+
+func (p *parser) Usage() string {
+	b := &bytes.Buffer{}
+	p.PrintUsage(b)
+	return b.String()
+}
+
+func (p *parser) PrintUsage(w io.Writer) error {
+	return p.PrintAndIndentUsage(w, 4)
+}
+
+func (p *parser) PrintAndIndentUsage(w io.Writer, indent int) error {
+
+	// "INDENT[-OPT][, [--LONGOPT][ ARG]][VARSPACE][DESCRIP]"
+	// :ntx::
+	//     -n, --name       The name description.
+	//     -t, --time arg   The time description.
+	//     -x, --xist [arg] The xist description.
+	//         --pulp       The pulp description.
+
+	hasOpt := len(p.shortOpts) > 0
+	indentStr := []byte(strings.Repeat(" ", indent))
+	maxUsage := p.maxUsageLen + indent + 1
+
+	for _, o := range p.optsOrdered {
+
+		var (
+			n, nn int
+			err   error
+		)
+
+		// write the indent
+		if n, err = w.Write(indentStr); err != nil {
+			return err
+		}
+		nn += n
+
+		if o.opt > 0 {
+			if n, err = fmt.Fprintf(w, "-%c", o.opt); err != nil {
+				return err
+			}
+			nn += n
+		} else if hasOpt {
+			if n, err = fmt.Fprintf(w, "  "); err != nil {
+				return err
+			}
+			nn += n
+		}
+
+		if o.opt > 0 {
+			if o.longName != "" {
+				if n, err = fmt.Fprintf(w, ", "); err != nil {
+					return err
+				}
+				nn += n
+			}
+		} else if hasOpt {
+			if n, err = fmt.Fprintf(w, "  "); err != nil {
+				return err
+			}
+			nn += n
+		}
+
+		if o.longName != "" {
+			if n, err = fmt.Fprintf(w, "--%s", o.longName); err != nil {
+				return err
+			}
+			nn += n
+		}
+
+		if o.optType != NoArgument {
+			if n, err = fmt.Fprintf(w, " "); err != nil {
+				return err
+			}
+			nn += n
+			if n, err = fmt.Fprintf(w, o.argText); err != nil {
+				return err
+			}
+			nn += n
+		}
+
+		ws := strings.Repeat(" ", maxUsage-nn)
+		if _, err = fmt.Fprintf(w, ws); err != nil {
+			return err
+		}
+
+		if _, err = fmt.Fprintf(w, o.desc); err != nil {
+			return err
+		}
+
+		if _, err = fmt.Fprintln(w); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
